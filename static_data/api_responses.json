@@ -1,0 +1,72 @@
+{
+    "api/v1/game/getJoinTableDetails": {
+        "status": true,
+        "code": 200,
+        "data": [
+            {
+                "id": 2,
+                "gameType": "ONEvONEvONE",
+                "gameName": "Three Player",
+                "gameSubType": "NLH",
+                "winAmount": 50,
+                "minPlayer": 3,
+                "maxPlayer": 3,
+                "createdAt": "2024-01-08T05:36:43.682Z",
+                "updatedAt": "2024-01-08T05:36:43.682Z",
+                "entryAmount": 10
+            },
+            {
+                "id": 1,
+                "gameType": "ONEvONE",
+                "gameName": "Two Player",
+                "gameSubType": "NLH",
+                "winAmount": 50,
+                "minPlayer": 2,
+                "maxPlayer": 2,
+                "createdAt": "2024-01-08T05:36:43.682Z",
+                "updatedAt": "2024-01-08T05:36:43.682Z",
+                "entryAmount": 10
+            },
+            {
+                "id": 3,
+                "gameType": "ONEvONE",
+                "gameName": "Three Player",
+                "gameSubType": "NLH",
+                "winAmount": 5000,
+                "minPlayer": 2,
+                "maxPlayer": 2,
+                "createdAt": "2024-01-08T05:36:43.682Z",
+                "updatedAt": "2024-01-08T05:36:43.682Z",
+                "entryAmount": 500
+            },
+            {
+                "id": 4,
+                "gameType": "ONEvONEvONE",
+                "gameName": "Three Player",
+                "gameSubType": "NLH",
+                "winAmount": 5000,
+                "minPlayer": 3,
+                "maxPlayer": 3,
+                "createdAt": "2024-01-08T05:36:43.682Z",
+                "updatedAt": "2024-01-08T05:36:43.682Z",
+                "entryAmount": 500
+            }
+        ]
+    },
+    "api/v1/appsetting": {
+        "status": true,
+        "code": 200,
+        "data": {
+            "uid": "JEET",
+            "changeData": {
+                "game_settings":{
+                    "notifications": true,
+                    "music":false,
+                    "vibration":true,
+                    "sound":true
+                }
+            },
+            "changeType": "settings"
+        }
+    }
+}
