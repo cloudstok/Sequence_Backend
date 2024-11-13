@@ -18,6 +18,7 @@ const maxRetries = retry;
 const retryInterval = interval; 
 
 let redisClient;
+let subscriber;
 
 const createRedisClient = () => {
     const client = new Redis(redisConfig);
@@ -43,6 +44,7 @@ export const initializeRedis = async () => {
     while (retries < maxRetries) {
         try {
             redisClient = createRedisClient();
+            subscriber = createRedisClient();
             await redisClient.set('test', 'test'); 
             await redisClient.del('test'); 
             logger.info("REDIS CONNECTION SUCCESSFUL");
@@ -58,6 +60,16 @@ export const initializeRedis = async () => {
         }
     }
 };
+
+export const flushDatabase = async() => {
+    try {
+        await redisClient.flushdb();
+        console.log('All keys deleted from the current Redis database');
+    } catch (error) {
+        console.error('Error deleting keys from Redis:', error.message);
+    }
+}
+
 
 export const setCache = async (key, value, expiration = 3600 * 24 * 1000) => {
     if (!redisClient) await initializeRedis();

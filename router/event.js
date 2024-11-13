@@ -11,7 +11,6 @@ export const registerEvents = (io, socket) => {
         disconnect
     };
     for (const [event, handler] of Object.entries(events)) {
-        console.log("Registering Event",event);
         socket.on(event, (data) => handler(io, socket, data));
     }
 };

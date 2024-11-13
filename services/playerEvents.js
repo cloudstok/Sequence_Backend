@@ -20,7 +20,7 @@ export const handleUser = async (req, res) => {
         const { id, name, image, balance } = userData;
         return res.status(200).send({
             status: true, data: {
-                uid: id, referral_link: "", referral_code: "", balance, userName: name, avatar: image, game_setting: {
+                uid: id, referral_link: "", referral_code: "", balance: Number(balance).toFixed(2), userName: name, avatar: image, game_setting: {
                     sound: true,
                     music: true,
                     notifications: false
@@ -32,27 +32,6 @@ export const handleUser = async (req, res) => {
         return res.status(500).send({ status: false, msg: "Something went wrong, while getting user data from operator" });
     }
 };
-
-// export const handleUserBalance = async (req, res) => {
-//     try {
-//         const { gametoken } = req.headers;
-//         const logReqObj = { gametoken };
-
-//         if (!gametoken) {
-//             return res.status(400).send({ status: true, msg: "Game id or gametoken missing in headers" });
-//         }
-
-//         const userBalance = await getUserBalanceFromSource(gametoken);
-//         if (!userBalance) {
-//             return res.status(400).send({ status: true, msg: "Failed to fetch user details from the operator" });
-//         }
-//         logger.info(JSON.stringify({ req: logReqObj, res: userBalance }));
-//         return res.status(200).send({ status: true, code: 200, data: { "referralAmount": 0.00, "depositeAmount": Number(userBalance?.data?.balance), "cashAmount": 0.00, "totalAmount": Number(userBalance?.data?.balance) } });
-//     } catch (err) {
-//         logger.error(JSON.stringify({ data, err: err }));
-//         return res.status(500).send({ status: false, msg: "Something went wrong, while getting user data from operator" });
-//     }
-// };
 
 function getImageValue(id) {
     let sum = 0;
@@ -86,25 +65,6 @@ export const getUserDataFromSource = async (token, game_id) => {
         return false;
     }
 };
-
-// export const getUserBalanceFromSource = async (token) => {
-//     try {
-//         const userData = await axios.get(`${process.env.service_base_url}/service/operator/user/balance`, {
-//             headers: {
-//                 'token': token
-//             }
-//         }).then(async data => {
-//             return data?.data;
-//         }).catch(err => {
-//             logger.error(JSON.stringify({ data: token, err: err }));
-//             return false;
-//         });
-//         return userData;
-//     } catch (err) {
-//         logger.error(JSON.stringify({ data: token, err: err }));
-//         return false;
-//     }
-// };
 
 
 export const getUserData = async (key) => {

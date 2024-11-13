@@ -1,6 +1,7 @@
-export default class Card {
-    constructor(rVal, id) {
-        this.rVal = rVal;
-        this.id = id;
+export const createCard = (rVal, id) => {
+    const card = {
+        rVal: rVal,
+        id: id
     }
+    return card
 }
