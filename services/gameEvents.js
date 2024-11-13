@@ -178,7 +178,6 @@ export const UpdateMeRequest = async (socket) => {
     };
     playerDetails = JSON.parse(playerDetails);
     const existingPlayerRoom = await getCache(`PG:${playerDetails.id}`);
-    console.log(existingPlayerRoom, "<<<<<<1");
     if(existingPlayerRoom){
         const gameData = await getCache(`game:${existingPlayerRoom}`);
         if(gameData){
