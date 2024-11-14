@@ -20,7 +20,7 @@ jobs:
 
     - name: Copy files to EC2
       run: |
-        scp -r -o StrictHostKeyChecking=no * ubuntu@${{ secrets.EC2_HOST_BLAST_OFF_BACKEND_PROD }}:/home/ubuntu/sequence
+        scp -r -o StrictHostKeyChecking=no * ubuntu@${{ secrets.EC2_HOST_SEQUENCE_BACKEND_PROD }}:/home/ubuntu/sequence
     - name: Install dependencies and restart PM2
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST_SEQUENCE_BACKEND_PROD }} << 'EOF'
