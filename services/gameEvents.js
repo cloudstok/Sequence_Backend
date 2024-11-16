@@ -80,12 +80,14 @@ export const JoinRoomRequest = async (io, socket, data) => {
             const timeoutCallback = async () => {
                 const gameData = await getCache(`game:${roomId}`);
                 game = gameData ? JSON.parse(gameData) : null;
-                if (game && game.players.length >= Number(maxPlayer)) {
-                    await startGame(game, io);
-                } else {
+                if(game){
+                    if (game.players.length >= Number(maxPlayer)) {
+                        await startGame(game, io);
+                    } else {
                         const eventData = { MAX_TIME: 60, message: "You are long waiting, so please switch table or join new table", CURRENT_TIME: 0, roomName: roomId, status: true };
                         io.to(roomId).emit('message', { eventName: 'GAME_EXIT', data: eventData });
                         await removeGameFromList(game, io);
+                    }
                 }
             };
             const gameTimeout = setTimeout(timeoutCallback, 60 * 1000);
