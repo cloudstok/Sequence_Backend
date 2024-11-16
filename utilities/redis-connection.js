@@ -18,7 +18,6 @@ const maxRetries = retry;
 const retryInterval = interval; 
 
 let redisClient;
-let subscriber;
 
 const createRedisClient = () => {
     const client = new Redis(redisConfig);

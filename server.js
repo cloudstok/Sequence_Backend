@@ -5,7 +5,7 @@ import http from 'http';
 import { initSocket } from './socket.js';
 import dotenv from 'dotenv';
 import { checkDatabaseConnection } from './utilities/db-connection.js';
-import { flushDatabase, initializeRedis } from './utilities/redis-connection.js';
+import { initializeRedis } from './utilities/redis-connection.js';
 import { initQueue } from './utilities/amqp.js';
 import { router } from './router/route.js';
 import { loadConfig } from './utilities/load-config.js';
@@ -18,7 +18,6 @@ const startServer = async () => {
     try{
         await Promise.all([checkDatabaseConnection(), initQueue(), initializeRedis()]);
         await loadConfig();
-        // await flushDatabase();
         const app = express();
         const server = http.createServer(app);
         const io = new SocketIOServer(server,{transports:["websocket"]});

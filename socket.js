@@ -2,6 +2,7 @@ import { registerEvents } from './router/event.js';
 import { setCache } from './utilities/redis-connection.js';
 import { getUserDataFromSource } from './services/playerEvents.js';
 import { UpdateMeRequest } from './services/gameEvents.js';
+
 export const initSocket = (io) => {
     const onConnection = async (socket) => {
         console.log("socket connected");
@@ -20,11 +21,11 @@ export const initSocket = (io) => {
         socket.emit('message', {
             eventName: 'info', data: {
                 uid: userData.id,
-                 referral_link: "", 
-                 referral_code: "",
-                  balance: Number(userData.balance).toFixed(2), 
-                  userName: userData.name, 
-                  avatar: userData.image
+                referral_link: "",
+                referral_code: "",
+                balance: Number(userData.balance).toFixed(2),
+                userName: userData.name,
+                avatar: userData.image
             }
         });
         registerEvents(io, socket);

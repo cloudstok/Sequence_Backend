@@ -1,6 +1,5 @@
 import { createCard } from './card.js';
 
-
 export const generateDeckForPlayer =(decks) => {
     const cards = [];
     const suits = ['H', 'D', 'C', 'S'];
