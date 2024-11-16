@@ -1,8 +1,11 @@
 import axios from "axios";
-import { prepareDataForWebhook } from "../utilities/common-function.js";
+import { generateUUIDv7, prepareDataForWebhook } from "../utilities/common-function.js";
 import { getCache, setCache } from "../utilities/redis-connection.js";
 import { sendToQueue } from "../utilities/amqp.js";
 import { variableConfig } from "../utilities/load-config.js";
+import { createLogger } from '../utilities/logger.js';
+const thirdPartyLogger = createLogger('ThirdPartyAPICalls', 'jsonl');
+const failedThirdPartyLogger = createLogger('FailedThirdPartyAPICalls', 'jsonl');
 
 export const createPlayerData = (playerDetails, socketId, maxAmount, roomId) => {
     const { id, name, token, image, operatorId, userId } = playerDetails;
@@ -102,10 +105,12 @@ export const sendRequestToAccounts = async (webhookData, token) => {
             timeout: 1000 * 5
         };
         const data = (await axios(clientServerOptions))?.data;
+        thirdPartyLogger.info(JSON.stringify({ logId: generateUUIDv7(), req: clientServerOptions, res: data}))
         if (!data.status) return false;
         return true;
     } catch (err) {
         console.error(`Err while sending request to accounts is:::`, err?.message);
+        failedThirdPartyLogger.error(JSON.stringify({ logId: generateUUIDv7(), req: {webhookData, token}, res: err?.response?.status}));
         return false;
     }
 }

@@ -49,7 +49,7 @@ export const sendToQueue = async(ex, queueName, message, delay = 0, retries = 0)
         pubChannel.publish(exchange, queueName, Buffer.from(message), {
             headers: { "x-delay": delay, "x-retries": retries }, persistent: true
         });
-        rabbitMQLogger.info(`Message sent to ${queueName} queue on exchange ${exchange}`);
+        rabbitMQLogger.info(`Message sent to ${queueName} queue on exchange ${exchange} with data ${JSON.stringify(message)}`);
     } catch (error) {
         console.log(error);
         rabbitMQLogger.error(`Failed to send message to ${queueName} queue on exchange ${exchange}: ${error.message}`);

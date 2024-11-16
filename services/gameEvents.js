@@ -57,7 +57,6 @@ export const JoinRoomRequest = async (io, socket, data) => {
         let roomId;
         let game;
 
-        // Retrieve existing room IDs for the game
         let existingRoomIds = await getCache(`rooms:${gameId}`);
         existingRoomIds = existingRoomIds ? JSON.parse(existingRoomIds) : [];
         
@@ -74,27 +73,23 @@ export const JoinRoomRequest = async (io, socket, data) => {
             roomId = `SQ${gameId}-${Date.now()}`;
             game = generateGameData(gameDetails, roomId);
 
-            // Save initial game data to Redis, excluding the timer
             await setCache(`game:${roomId}`, JSON.stringify(game));
             existingRoomIds.push(roomId);
             await setCache(`rooms:${gameId}`, JSON.stringify(existingRoomIds));
 
-            // Set a timer in memory, not in the game object, and handle timeout logic
             const timeoutCallback = async () => {
                 const gameData = await getCache(`game:${roomId}`);
                 game = gameData ? JSON.parse(gameData) : null;
                 if (game && game.players.length >= Number(maxPlayer)) {
                     await startGame(game, io);
                 } else {
-                    const eventData = { MAX_TIME: 60, message: "You are long waiting, so please switch table or join new table", CURRENT_TIME: 0, roomName: roomId, status: true };
-                    io.to(roomId).emit('message', { eventName: 'GAME_EXIT', data: eventData });
-                    await deleteCache(`game:${roomId}`);
-                    existingRoomIds = existingRoomIds.filter(r => r !== roomId);
-                    await setCache(`rooms:${gameId}`, JSON.stringify(existingRoomIds));
+                        const eventData = { MAX_TIME: 60, message: "You are long waiting, so please switch table or join new table", CURRENT_TIME: 0, roomName: roomId, status: true };
+                        io.to(roomId).emit('message', { eventName: 'GAME_EXIT', data: eventData });
+                        await removeGameFromList(game, io);
                 }
             };
             const gameTimeout = setTimeout(timeoutCallback, 60 * 1000);
-            globalThis[`timer_${roomId}`] = gameTimeout; // Save the timer in a global variable
+            globalThis[`timer_${roomId}`] = gameTimeout; 
         }
 
         let isPlayerExist = game.players.find(e => e.id === playerDetails.id);
@@ -119,14 +114,12 @@ export const JoinRoomRequest = async (io, socket, data) => {
 
         if (game.players.length >= Number(maxPlayer)) {
             setTimeout(async () => {
-                console.log("Game Started>>>>>>>");
                 await startGame(game, io);
                 const timerKey = `timer_${roomId}`;
                 if (globalThis[timerKey]) {
                     clearTimeout(globalThis[timerKey]);
                     delete globalThis[timerKey];
                 }
-                // await setCache(`game:${roomId}`, JSON.stringify(game));
             }, 2000);
         }
         return;
@@ -138,6 +131,7 @@ export const JoinRoomRequest = async (io, socket, data) => {
 
 
 export const removeGameFromList = async (game, io) => {
+    if(!game || !game?.id) return;
     await insertGameData(game);
     io.socketsLeave(game.id);
     const socketsInRoom = await io.in(game.id).fetchSockets();
@@ -171,13 +165,14 @@ export const UserActionRequest = async (io, socket, data) => {
 }
 
 export const UpdateMeRequest = async (socket) => {
-    console.log("updateMeRequest>>>>>>>");
+    console.log("updateMeRequest>>>>>>>", socket.id);
     let playerDetails = await getCache(`PL:${socket.id}`);
     if (!playerDetails) {
         return socket.emit('message', { eventName: 'error', data: { message: 'Invalid Player Details' } });
     };
     playerDetails = JSON.parse(playerDetails);
     const existingPlayerRoom = await getCache(`PG:${playerDetails.id}`);
+    console.log(existingPlayerRoom, "<<<<<,,,PlayerId");
     if(existingPlayerRoom){
         const gameData = await getCache(`game:${existingPlayerRoom}`);
         if(gameData){
