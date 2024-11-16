@@ -590,8 +590,7 @@ export const placeCards = async (game, boardCardPos, cardId, playerId, io) => {
         }
         player.isTurn = false;
         player.hand = player.hand.filter(card => card.id != cardId);
-        // const newCard = game.playerDeck.pop();
-        const newCard = game.playerDeck.find(card => card.rVal == 'D11');
+        const newCard = game.playerDeck.pop();
         player.hand.push(newCard);
         player.missedTurns = 0;
         player.skipCount = 3;
