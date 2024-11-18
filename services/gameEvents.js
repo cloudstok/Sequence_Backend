@@ -34,7 +34,6 @@ export const getGameData = (gameObj) => {
     return cleanObj;
 }
 
-
 export const JoinRoomRequest = async (io, socket, data) => {
     try {
         data = typeof data === 'string' ? JSON.parse(data) : data;
@@ -150,7 +149,6 @@ export const JoinRoomRequest = async (io, socket, data) => {
     }
 };
 
-
 export const removeGameFromList = async (game, io) => {
     if(!game || !game?.id) return;
     await insertGameData(game);
@@ -172,7 +170,7 @@ export const removeGameFromList = async (game, io) => {
     existingRoomIds = existingRoomIds.filter(r => r !== game.id);
     await setCache(`rooms:${game.gameId}`, JSON.stringify(existingRoomIds));
     console.log("Game deleted");
-}
+};
 
 export const UserActionRequest = async (io, socket, data) => {
     data = typeof data === 'string' ? JSON.parse(data) : data;
@@ -189,7 +187,7 @@ export const UserActionRequest = async (io, socket, data) => {
     } else {
         return socket.emit('message', { eventName: 'UserActionRequest', data: { message: 'Game details not found' } });
     }
-}
+};
 
 export const UpdateMeRequest = async (socket) => {
     let playerDetails = await getCache(`PL:${socket.id}`);
@@ -222,7 +220,7 @@ export const GameStatus = async (io, socket, data) => {
     } else {
         return socket.emit('message', { eventName: 'error', data: { message: 'Game or Player not found' } });
     }
-}
+};
 
 export const GameLeave = async (io, socket, data) => {
     data = typeof data === 'string' ? JSON.parse(data) : data;
@@ -239,7 +237,7 @@ export const GameLeave = async (io, socket, data) => {
     } else {
         return socket.emit('message', { eventName: 'GAME_LEAVE', data: { message: 'Game or Player not found' } });
     }
-}
+};
 
 export const DiscardCard = async (io, socket, data) => {
     data = typeof data === 'string' ? JSON.parse(data) : data;
@@ -258,8 +256,7 @@ export const DiscardCard = async (io, socket, data) => {
     }
 };
 
-
 export const disconnect = async (io, socket) => {
     await deleteCache(`PL:${socket.id}`);
     console.log(`Socket disconnected: ${socket.id}`);
-}
+};
