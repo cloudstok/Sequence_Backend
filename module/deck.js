@@ -1,6 +1,5 @@
 import { createCard } from './card.js';
 
-
 export const generateDeck = (decks, type = 'default') => {
     const cards = [];
     const suits = ['H', 'D', 'C', 'S'];
@@ -26,11 +25,11 @@ export const generateDeck = (decks, type = 'default') => {
         }
     }
     return cards;
-}
+};
 
 export const shuffle = (cards) => {
     cards.sort(() => Math.random() - 0.5);
     return cards
-}
+};
 
 

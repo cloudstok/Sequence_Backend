@@ -16,7 +16,7 @@ const clearTimer = (playerId, gameId) => {
         clearTimeout(timers.get(timerKey));
         timers.delete(timerKey);
     }
-}
+};
 
 export const generateGameData = (gameDetails, roomId) => {
     const { id, entryAmount, maxPlayer, winAmount } = gameDetails;
@@ -41,7 +41,7 @@ export const generateGameData = (gameDetails, roomId) => {
         resultData: [],
     };
     return gameData;
-}
+};
 
 export const updateMeRequest = async (game, playerId, socket, event = 'reconnection') => {
     try {
@@ -102,7 +102,7 @@ export const updateMeRequest = async (game, playerId, socket, event = 'reconnect
     } catch (err) {
         console.error("Error in updateMeRequest>>", err);
     }
-}
+};
 
 export const addPlayer = (player, maxPlayer, game) => {
     try {
@@ -119,7 +119,7 @@ export const addPlayer = (player, maxPlayer, game) => {
     } catch (err) {
         console.error("Err while adding player to game>>", err);
     }
-}
+};
 
 const sendGameExitMessage = (io, player, roomId, message) => {
     io.to(player.socketId).emit('message', {
@@ -274,7 +274,7 @@ const dealCards = async (game, io) => {
         }
         await nextTurn(JSON.parse(cachedGame), io)
     }, 2000);
-}
+};
 
 const checkPlayerSequences = async (games, player, io) => {
     const boardCards = games.boardCards;
@@ -816,7 +816,7 @@ const dropPlayerFromGame = async (game, playerId, io) => {
     } catch (err) {
         console.error(`Error dropping player from game:`, err);
     };
-}
+};
 
 export const discardCard = async (game, playerId, cardId, io) => {
     try {
@@ -849,7 +849,7 @@ export const discardCard = async (game, playerId, cardId, io) => {
     } catch (err) {
         console.error(`Error in discardCard:`, err);
     }
-}
+};
 
 export const removePlayerFromGame = async (game, playerId, io, socket) => {
     try {
@@ -881,4 +881,4 @@ export const removePlayerFromGame = async (game, playerId, io, socket) => {
     } catch (err) {
         console.error(`Error in removePlayerFromGame:`, err);
     }
-}
+};

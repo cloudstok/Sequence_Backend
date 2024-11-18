@@ -39,7 +39,7 @@ function getImageValue(id) {
         sum += (char.charCodeAt(0));
     }
     return sum % 10;
-}
+};
 
 export const getUserDataFromSource = async (token, game_id) => {
     try {
