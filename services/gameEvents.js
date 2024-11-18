@@ -3,6 +3,9 @@ import { createPlayerData } from "../module/player.js";
 import { deleteCache, getCache, setCache } from "../utilities/redis-connection.js";
 import { variableConfig } from "../utilities/load-config.js";
 import { insertGameData } from "../module/db-data/game-data-db.js";
+import { createLogger } from "../utilities/logger.js";
+const gameLogger = createLogger('Game', 'jsonl');
+const gameEndLogger = createLogger('EndedGame', 'jsonl');
 
 export const getGameFromId = (gameId) => {
     const gameDetails = variableConfig.games_templates.find(e => e.id === Number(gameId));
@@ -82,6 +85,7 @@ export const JoinRoomRequest = async (io, socket, data) => {
                 game = gameData ? JSON.parse(gameData) : null;
                 if(game){
                     if (game.players.length >= Number(maxPlayer)) {
+                        gameLogger.info(JSON.stringify(game));
                         await startGame(game, io);
                     } else {
                         const eventData = { MAX_TIME: 60, message: "You are long waiting, so please switch table or join new table", CURRENT_TIME: 0, roomName: roomId, status: true };
@@ -114,7 +118,7 @@ export const JoinRoomRequest = async (io, socket, data) => {
             io.to(roomId).emit('message', { eventName: 'PLAYER_WAITING_STATE', data: eventData });
             const updatePlayerEventData = { PLAYER: game.players.map(({ id, name, chipColor }) => ({
                 id, name, chipColor
-            })), roomStatus: true, message: "Players List", roomName: roomId, status: true };
+            })), roomStatus: true, message: "Players List", roomName: roomId, maxPlayers: maxPlayer, status: true };
             io.to(roomId).emit('message', { eventName: 'UPDATE_PLAYER_EVENT', data: updatePlayerEventData });
         }, 1000);
 
@@ -130,6 +134,7 @@ export const JoinRoomRequest = async (io, socket, data) => {
                     console.log("Maximum player not reached in lobby", currentGame.players.length);
                     return;
                 };
+                gameLogger.info(JSON.stringify(currentGame));
                 await startGame(currentGame, io);
                 const timerKey = `timer_${currentGame.id}`;
                 if (globalThis[timerKey]) {
@@ -149,6 +154,7 @@ export const JoinRoomRequest = async (io, socket, data) => {
 export const removeGameFromList = async (game, io) => {
     if(!game || !game?.id) return;
     await insertGameData(game);
+    gameEndLogger.info(JSON.stringify(game));
     io.socketsLeave(game.id);
     const socketsInRoom = await io.in(game.id).fetchSockets();
     socketsInRoom.forEach((socket) => {

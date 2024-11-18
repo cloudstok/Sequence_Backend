@@ -4,6 +4,10 @@ import { generateDeckForPlayer } from './player-deck.js';
 import { deleteCache, getCache, setCache } from '../utilities/redis-connection.js';
 import { sendCreditRequest, updateBalanceFromAccount } from './player.js';
 import { insertSettlement } from './db-data/bets-db.js';
+import { createLogger } from '../utilities/logger.js';
+const gameResultLogger  = createLogger('GameResult', 'jsonl');
+const gameLeaveLogger = createLogger('GameLeave', 'jsonl');
+
 const timers = new Map();
 
 const clearTimer = (playerId, gameId) => {
@@ -468,6 +472,7 @@ const handleGameEnd = async (game, io) => {
                 betAmount: game.betAmount,
                 winAmount: player.isWinner ? player.winAmount : -game.betAmount
             };
+            gameResultLogger.info(JSON.stringify({...resultData, gameId: game.id}));
             await insertSettlement({
                 bet_id: player.bet_id,
                 name: player.name,
@@ -500,6 +505,7 @@ const handleDraw = async (game, io) => {
                 betAmount: game.betAmount,
                 winAmount: player.winAmount
             };
+            gameResultLogger.info(JSON.stringify({ ...resultData, gameId: game.id }));
             await insertSettlement({
                 bet_id: player.bet_id,
                 name: player.name,
@@ -632,7 +638,6 @@ export const placeCards = async (game, boardCardPos, cardId, playerId, io) => {
         player.isTurn = false;
         player.hand = player.hand.filter(card => card.id != cardId);
         const newCard = game.playerDeck.pop();
-        // const newCard = game.playerDeck.find(card => card.rVal == 'D11');
         player.hand.push(newCard);
         player.missedTurns = 0;
         player.skipCount = 3;
@@ -729,15 +734,16 @@ const dropPlayerFromGame = async (game, playerId, io) => {
 
         clearTimer(player.id, game.id); //Remove timer if exists
 
-        game.resultData.push({
+        const resultData = {
             uid: player.id,
             name: player.name,
             isWinner: player.isWinner,
             chipColor: player.chipColor,
             betAmount: game.betAmount,
             winAmount: -game.betAmount
+        };
 
-        });
+        game.resultData.push(resultData);
 
         //Insert into DB
         await insertSettlement({
@@ -752,20 +758,26 @@ const dropPlayerFromGame = async (game, playerId, io) => {
             game.currentPlayerTurnPos = (game.currentPlayerTurnPos - 1 + game.players.length) % game.players.length;
         }
 
+        gameResultLogger.info(JSON.stringify({...resultData, gameId: game.id}));
+
         if (game.players.length == 1) {
             const winningPlayer = game.players[0];
             game.winner = winningPlayer;
             winningPlayer.isWinner = true;
             winningPlayer.winAmount = game.winAmount;
 
-            game.resultData.push({
+            const winningPlayerResultData = {
                 uid: winningPlayer.id,
                 name: winningPlayer.name,
                 isWinner: winningPlayer.isWinner,
                 chipColor: winningPlayer.chipColor,
                 betAmount: game.betAmount,
                 winAmount: winningPlayer.winAmount
-            });
+            };
+
+            game.resultData.push(winningPlayerResultData);
+
+            gameResultLogger.info(JSON.stringify({ ...winningPlayerResultData, gameId: game.id}));
 
             await insertSettlement({
                 bet_id: winningPlayer.bet_id,
@@ -848,9 +860,11 @@ export const removePlayerFromGame = async (game, playerId, io, socket) => {
             data: {}
         });
         if (game.isStarted) {
+            gameLeaveLogger.info(JSON.stringify({ gameId: game.id, status: game.isStarted, playerId}));
             await dropPlayerFromGame(game, playerId, io)
         } else {
             clearTimer(playerId, game.id);
+            gameLeaveLogger.info(JSON.stringify({ gameId: game.id, status: false, playerId }));
             game.players = game.players.filter(p => p.id !== playerId);
             if (game.players.length === 0) {
                 await removeGameFromList(game, io)
@@ -860,7 +874,7 @@ export const removePlayerFromGame = async (game, playerId, io, socket) => {
                 io.to(game.id).emit('message', { eventName: 'PLAYER_WAITING_STATE', data: eventData });
                 const updatePlayerEventData = { PLAYER: game.players.map(({ id, name, chipColor }) => ({
                     id, name, chipColor
-                })), roomStatus: true, message: "Players List", roomName: game.id, status: true };
+                })), roomStatus: true, message: "Players List", roomName: game.id, maxPlayers: game.maxPlayer, status: true };
                 io.to(game.id).emit('message', { eventName: 'UPDATE_PLAYER_EVENT', data: updatePlayerEventData });
             };
         }
