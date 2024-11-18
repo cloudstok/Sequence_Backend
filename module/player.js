@@ -8,12 +8,13 @@ const thirdPartyLogger = createLogger('ThirdPartyAPICalls', 'jsonl');
 const failedThirdPartyLogger = createLogger('FailedThirdPartyAPICalls', 'jsonl');
 
 export const createPlayerData = (playerDetails, socketId, maxAmount, roomId) => {
-    const { id, name, token, image, operatorId, userId } = playerDetails;
+    const { id, name, token, image, operatorId, userId, game_id } = playerDetails;
     const playerData = {
         id: id,
         bet_id: `BT:${roomId}:${operatorId}:${userId}:${maxAmount}`,
         socketId: socketId,
         name: name,
+        game_id,
         token: token,
         winAmount: 0,
         depositAmount: maxAmount,
@@ -36,24 +37,25 @@ export const createPlayerData = (playerDetails, socketId, maxAmount, roomId) => 
 export const sendCreditRequest = async(data, io, playerData)=> {
     try{
         const socketId = data.socket_id;
+        const socket = io.sockets.sockets.get(socketId) || '';
+        const webhookData = await prepareDataForWebhook({ ...data, game_id: playerData.game_id }, "CREDIT", socket);
+        await sendToQueue('', 'games_cashout', JSON.stringify({ ...webhookData, operatorId: playerData.id.split(':')[0], token: playerData.token}));
         let playerDetails = await getCache(`PL:${socketId}`);
-        if (!playerDetails) return false;
-        playerDetails = JSON.parse(playerDetails);
-        const socket = io.sockets.sockets.get(socketId);
-        const webhookData = await prepareDataForWebhook({ ...data, game_id: playerDetails.game_id }, "CREDIT", socket);
-        await sendToQueue('', 'games_cashout', JSON.stringify({ ...webhookData, operatorId: playerDetails.operatorId, token: playerData.token}));
-        playerDetails.balance = (Number(playerDetails.balance) + Number(data.winning_amount)).toFixed(2);
-        await setCache(`PL:${socketId}`, JSON.stringify(playerDetails));
-        io.to(socketId).emit('message', {
-            eventName: 'info', data: {
-                uid: playerDetails.id,
-                referral_link: "", 
-                referral_code: "", 
-                balance: Number(playerDetails.balance).toFixed(2), 
-                userName: playerDetails.name, 
-                avatar: playerDetails.image
-            }
-        })
+        if(playerDetails){
+            playerDetails = JSON.parse(playerDetails);
+            playerDetails.balance = (Number(playerDetails.balance) + Number(data.winning_amount)).toFixed(2);
+            await setCache(`PL:${socketId}`, JSON.stringify(playerDetails));
+            io.to(socketId).emit('message', {
+                eventName: 'info', data: {
+                    uid: playerDetails.id,
+                    referral_link: "", 
+                    referral_code: "", 
+                    balance: Number(playerDetails.balance).toFixed(2), 
+                    userName: playerDetails.name, 
+                    avatar: playerDetails.image
+                }
+            });
+        }
         return true;
     }catch(err){
         console.log(err);

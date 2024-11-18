@@ -43,7 +43,6 @@ export const initializeRedis = async () => {
     while (retries < maxRetries) {
         try {
             redisClient = createRedisClient();
-            subscriber = createRedisClient();
             await redisClient.set('test', 'test'); 
             await redisClient.del('test'); 
             logger.info("REDIS CONNECTION SUCCESSFUL");

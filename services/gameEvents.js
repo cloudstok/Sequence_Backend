@@ -39,13 +39,13 @@ export const JoinRoomRequest = async (io, socket, data) => {
 
         const gameDetails = getGameFromId(gameId);
         if (!gameDetails) {
-            return socket.emit('message', { eventName: 'error', data: { message: 'Invalid Game ID passed' } });
+            return socket.emit('message', { eventName: 'JOIN_ROOM_REQUEST', data: { message: 'Invalid Game ID passed', status: false } });
         }
 
         const { entryAmount, maxPlayer } = gameDetails;
         let playerDetails = await getCache(`PL:${socket.id}`);
         if (!playerDetails) {
-            return socket.emit('message', { eventName: 'error', data: { message: 'Invalid Player Details' } });
+            return socket.emit('message', { eventName: 'JOIN_ROOM_REQUEST', data: { message: 'Invalid Player Details', status: false } });
         }
 
         playerDetails = typeof playerDetails === 'string' ? JSON.parse(playerDetails) : playerDetails;
@@ -96,7 +96,7 @@ export const JoinRoomRequest = async (io, socket, data) => {
 
         let isPlayerExist = game.players.find(e => e.id === playerDetails.id);
         if (isPlayerExist) {
-            return socket.emit('message', { eventName: 'JoinRoomRequest', data: { message: "Player already exists in lobby", status: false } });
+            return socket.emit('message', { eventName: 'JOIN_ROOM_REQUEST', data: { message: "Player already exists in lobby", status: false } });
         }
 
         const player = createPlayerData(playerDetails, socket.id, entryAmount, roomId);
@@ -112,12 +112,26 @@ export const JoinRoomRequest = async (io, socket, data) => {
         setTimeout(() => {
             const eventData = { maxTime: 60, maxDateTime: Date.now(), current_time: 60 - ((Date.now() - game.gameStartTime) / 1000), message: "Please wait for other players to join game", roomName: roomId, status: true };
             io.to(roomId).emit('message', { eventName: 'PLAYER_WAITING_STATE', data: eventData });
+            const updatePlayerEventData = { PLAYER: game.players.map(({ id, name, chipColor }) => ({
+                id, name, chipColor
+            })), roomStatus: true, message: "Players List", roomName: roomId, status: true };
+            io.to(roomId).emit('message', { eventName: 'UPDATE_PLAYER_EVENT', data: updatePlayerEventData });
         }, 1000);
 
         if (game.players.length >= Number(maxPlayer)) {
             setTimeout(async () => {
-                await startGame(game, io);
-                const timerKey = `timer_${roomId}`;
+                const cachedGame = await getCache(`game:${game.id}`);
+                if(!cachedGame){
+                    console.log(`Game ${game.id} has been deleted. Aborting game.`);
+                    return;
+                };
+                const currentGame = JSON.parse(cachedGame);
+                if(currentGame.players.length < Number(maxPlayer)){
+                    console.log("Maximum player not reached in lobby", currentGame.players.length);
+                    return;
+                };
+                await startGame(currentGame, io);
+                const timerKey = `timer_${currentGame.id}`;
                 if (globalThis[timerKey]) {
                     clearTimeout(globalThis[timerKey]);
                     delete globalThis[timerKey];
@@ -140,6 +154,11 @@ export const removeGameFromList = async (game, io) => {
     socketsInRoom.forEach((socket) => {
         socket.removeAllListeners();
     });
+    const timerKey = `timer_${game.id}`;
+    if(globalThis[timerKey]){
+        clearTimeout(global[timerKey]);
+        delete global[timerKey];
+    }
     await Promise.all(game.players.map(async player=> await deleteCache(`PG:${player.id}`)));
     await deleteCache(`game:${game.id}`); // Delete the game room
     let existingRoomIds = await getCache(`rooms:${game.gameId}`);
@@ -167,14 +186,12 @@ export const UserActionRequest = async (io, socket, data) => {
 }
 
 export const UpdateMeRequest = async (socket) => {
-    console.log("updateMeRequest>>>>>>>", socket.id);
     let playerDetails = await getCache(`PL:${socket.id}`);
     if (!playerDetails) {
         return socket.emit('message', { eventName: 'error', data: { message: 'Invalid Player Details' } });
     };
     playerDetails = JSON.parse(playerDetails);
     const existingPlayerRoom = await getCache(`PG:${playerDetails.id}`);
-    console.log(existingPlayerRoom, "<<<<<,,,PlayerId");
     if(existingPlayerRoom){
         const gameData = await getCache(`game:${existingPlayerRoom}`);
         if(gameData){
@@ -185,7 +202,6 @@ export const UpdateMeRequest = async (socket) => {
 };
 
 export const GameStatus = async (io, socket, data) => {
-    console.log("GetStatusRequest>>>>>>>>>>>>>>>");
     data = typeof data === 'string' ? JSON.parse(data) : data;
     const { roomName } = data;
     let playerDetails = await getCache(`PL:${socket.id}`);
@@ -207,7 +223,7 @@ export const GameLeave = async (io, socket, data) => {
     const { roomName } = data;
     let playerDetails = await getCache(`PL:${socket.id}`);
     if (!playerDetails) {
-        return socket.emit('message', { eventName: 'error', data: { message: 'Invalid Player Details' } });
+        return socket.emit('message', { eventName: 'GAME_LEAVE', data: { message: 'Invalid Player Details' } });
     }
     playerDetails = JSON.parse(playerDetails);
     const gameData = await getCache(`game:${roomName}`);
@@ -215,7 +231,7 @@ export const GameLeave = async (io, socket, data) => {
     if (game) {
         await removePlayerFromGame(game, playerDetails.id, io, socket)
     } else {
-        return socket.emit('message', { eventName: 'error', data: { message: 'Game or Player not found' } });
+        return socket.emit('message', { eventName: 'GAME_LEAVE', data: { message: 'Game or Player not found' } });
     }
 }
 

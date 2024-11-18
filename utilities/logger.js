@@ -57,3 +57,41 @@ export const createLogger = (moduleName, format = 'plain') => {
     { stream: logFileStream } 
   ]));
 }
+
+// const deleteOldLogs = (logDir) => {
+//   const expirationTime = 48 * 60 * 60 * 1000; 
+//   const now = Date.now();
+
+//   fs.readdir(logDir, (err, files) => {
+//     if (err) {
+//       console.error(`Error reading log directory: ${err.message}`);
+//       return;
+//     }
+
+//     files.forEach((file) => {
+//       const filePath = path.join(logDir, file);
+//       fs.stat(filePath, (err, stats) => {
+//         if (err) {
+//           console.error(`Error accessing file ${file}: ${err.message}`);
+//           return;
+//         }
+
+//         if (now - stats.mtimeMs > expirationTime) {
+//           fs.unlink(filePath, (err) => {
+//             if (err) {
+//               console.error(`Error deleting file ${file}: ${err.message}`);
+//             } else {
+//               console.log(`Deleted old log file: ${file}`);
+//             }
+//           });
+//         }
+//       });
+//     });
+//   });
+// };
+
+// const logCleanupInterval = 60 * 60 * 1000;
+// setInterval(() => {
+//   const logDir = 'logs';
+//   deleteOldLogs(logDir);
+// }, logCleanupInterval);
