@@ -1,4 +1,4 @@
-import { addPlayer, discardCard, generateGameData, placeCards, removePlayerFromGame, startGame, updateMeRequest } from "../module/game.js";
+import { addPlayer, clearTimer, discardCard, generateGameData, placeCards, removePlayerFromGame, startGame, updateMeRequest } from "../module/game.js";
 import { createPlayerData } from "../module/player.js";
 import { deleteCache, getCache, setCache } from "../utilities/redis-connection.js";
 import { variableConfig } from "../utilities/load-config.js";
@@ -163,7 +163,10 @@ export const removeGameFromList = async (game, io) => {
         clearTimeout(global[timerKey]);
         delete global[timerKey];
     }
-    await Promise.all(game.players.map(async player=> await deleteCache(`PG:${player.id}`)));
+    await Promise.all(game.players.map(async player=> {
+        clearTimer(player.id, game.id);
+        await deleteCache(`PG:${player.id}`)
+    }));
     await deleteCache(`game:${game.id}`); // Delete the game room
     let existingRoomIds = await getCache(`rooms:${game.gameId}`);
     existingRoomIds = existingRoomIds ? JSON.parse(existingRoomIds) : [];

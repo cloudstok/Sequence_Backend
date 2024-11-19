@@ -31,7 +31,7 @@ export const prepareDataForWebhook = async(betObj, key, socket) => {
         };
         switch (key) {
             case "DEBIT":
-                obj.description = `${bet_amount} debited for Sequence game for Round ${id}`;
+                obj.description = `${obj.amount} debited for Sequence game for Round ${id}`;
                 obj.socket_id = socket_id;
                 obj.txn_type = 0;
                 break;
@@ -43,7 +43,7 @@ export const prepareDataForWebhook = async(betObj, key, socket) => {
                 break;
             case 'ROLLBACK':
                 obj.txn_ref_id = txn_id;
-                obj.description = `${bet_amount} Rollbacked for Sequence game for Round ${id}`;
+                obj.description = `${obj.amount} Rollbacked for Sequence game for Round ${id}`;
                 obj.txn_type = 2;
             default:
                 obj;

@@ -10,7 +10,7 @@ const gameLeaveLogger = createLogger('GameLeave', 'jsonl');
 
 const timers = new Map();
 
-const clearTimer = (playerId, gameId) => {
+export const clearTimer = (playerId, gameId) => {
     const timerKey = `${playerId}-${gameId}`;
     if (timers.has(timerKey)) {
         clearTimeout(timers.get(timerKey));
