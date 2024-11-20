@@ -236,7 +236,7 @@ export const GameLeave = async (io, socket, data) => {
     const gameData = await getCache(`game:${roomName}`);
     let game = gameData ? JSON.parse(gameData) : null;
     if (game) {
-        await removePlayerFromGame(game, playerDetails.id, io, socket)
+        await removePlayerFromGame(game, playerDetails, io)
     } else {
         return socket.emit('message', { eventName: 'GAME_LEAVE', data: { message: 'Game or Player not found' } });
     }

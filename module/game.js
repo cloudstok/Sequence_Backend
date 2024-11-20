@@ -86,7 +86,7 @@ export const updateMeRequest = async (game, playerId, socket, event = 'reconnect
         };
 
         const turnData = {
-            remainingTurnsTime: 18,
+            remainingTurnsTime: Number((game.players[game.currentPlayerTurnPos].turnTimer - Date.now()) / 1000),
             turnPlayerData: game.players[game.currentPlayerTurnPos].id
         };
 
@@ -638,6 +638,7 @@ export const placeCards = async (game, boardCardPos, cardId, playerId, io) => {
         player.isTurn = false;
         player.hand = player.hand.filter(card => card.id != cardId);
         const newCard = game.playerDeck.pop();
+        // const newCard = game.playerDeck.find(e=> e.rVal == 'D11');
         player.hand.push(newCard);
         player.missedTurns = 0;
         player.skipCount = 3;
@@ -694,6 +695,7 @@ const nextTurn = async (game, io) => {
         game.currentPlayerTurnPos = (game.currentPlayerTurnPos + 1) % game.players.length;
         const nextPlayer = game.players[game.currentPlayerTurnPos];
         nextPlayer.isTurn = true;
+        nextPlayer.turnTimer = Date.now() + 15 * 1000;
 
         emitTurnState(game, io, nextPlayer);
 
@@ -712,7 +714,7 @@ const nextTurn = async (game, io) => {
             currentPlayer.skipCount -= 1;
             currentGame.players[currentGame.currentPlayerTurnPos] = currentPlayer;
             await setCache(`game:${currentGame.id}`, JSON.stringify(currentGame));
-            if (currentPlayer.missedTurns >= 3) return dropPlayerFromGame(currentGame, currentPlayer.id, io);
+            if (currentPlayer.missedTurns >= 3) return removePlayerFromGame(currentGame, currentPlayer, io);
             else {
                 await nextTurn(currentGame, io)
             };
@@ -851,11 +853,11 @@ export const discardCard = async (game, playerId, cardId, io) => {
     }
 };
 
-export const removePlayerFromGame = async (game, playerId, io, socket) => {
+export const removePlayerFromGame = async (game, player, io) => {
     try {
+        const playerId = player.id;
         await deleteCache(`PG:${playerId}`);
-        socket.leave(game.id);
-        socket.emit('message', {
+        io.to(player.socketId).emit('message', {
             eventName: 'GAME_LEAVE',
             data: {}
         });
