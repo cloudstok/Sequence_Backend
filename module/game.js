@@ -150,40 +150,42 @@ const rollbackTransaction = async (io, player, game) => {
 };
 
 export const startGame = async (game, io) => {
-    const updatedPlayers = await Promise.all(game.players.map(async (player) => {
-        const updateBalanceData = {
-            id: game.id,
-            bet_amount: game.betAmount,
-            socket_id: player.socketId,
-            user_id: player.id.split(':')[1]
-        };
-        const isTransactionSuccessful = await updateBalanceFromAccount(updateBalanceData, "DEBIT", io, player);
-        if (isTransactionSuccessful) {
-            player.txn_id = isTransactionSuccessful.txn_id;
-            return player;
-        } else {
-            sendGameExitMessage(io, player, game.id, 'Bet Debit Request Failed, Game Play Cancelled');
-            return null;
+    if(!game.isStarted){
+        const updatedPlayers = await Promise.all(game.players.map(async (player) => {
+            const updateBalanceData = {
+                id: game.id,
+                bet_amount: game.betAmount,
+                socket_id: player.socketId,
+                user_id: player.id.split(':')[1]
+            };
+            const isTransactionSuccessful = await updateBalanceFromAccount(updateBalanceData, "DEBIT", io, player);
+            if (isTransactionSuccessful) {
+                player.txn_id = isTransactionSuccessful.txn_id;
+                return player;
+            } else {
+                sendGameExitMessage(io, player, game.id, 'Bet Debit Request Failed, Game Play Cancelled');
+                return null;
+            }
+        }));
+    
+        game.players = updatedPlayers.filter(player => player !== null);
+    
+        if (game.players.length < game.maxPlayer) {
+            await Promise.all(game.players.map(async player => rollbackTransaction(io, player, game)));
+            return removeGameFromList(game, io);
         }
-    }));
-
-    game.players = updatedPlayers.filter(player => player !== null);
-
-    if (game.players.length < game.maxPlayer) {
-        await Promise.all(game.players.map(async player => rollbackTransaction(io, player, game)));
-        return removeGameFromList(game, io);
+    
+        game.isStarted = true;
+        await setCache(`game:${game.id}`, JSON.stringify(game));
+        setTimeout(async () => {
+            const cachedGame = await getCache(`game:${game.id}`);
+            if (!cachedGame) {
+                console.log(`Game ${game.id} has been deleted. Aborting dealCards.`);
+                return;
+            }
+            dealCards(JSON.parse(cachedGame), io);
+        }, 1000);
     }
-
-    game.isStarted = true;
-    await setCache(`game:${game.id}`, JSON.stringify(game));
-    setTimeout(async () => {
-        const cachedGame = await getCache(`game:${game.id}`);
-        if (!cachedGame) {
-            console.log(`Game ${game.id} has been deleted. Aborting dealCards.`);
-            return;
-        }
-        dealCards(JSON.parse(cachedGame), io);
-    }, 1000);
 };
 
 const emitGameStartMessage = (game, io) => {
@@ -491,7 +493,7 @@ const handleGameEnd = async (game, io) => {
 
         io.to(game.id).emit('message', { eventName: 'RESULT_EVENT', data: eventData });
         await removeGameFromList(game, io);
-    }, 2000);
+    }, 4000);
 };
 
 const handleDraw = async (game, io) => {
@@ -535,7 +537,7 @@ const handleDraw = async (game, io) => {
 
         io.to(game.id).emit('message', { eventName: 'RESULT_EVENT', data: eventData });
         await removeGameFromList(game, io);
-    }, 2000);
+    }, 4000);
 };
 
 export const placeCards = async (game, boardCardPos, cardId, playerId, io) => {
@@ -637,8 +639,11 @@ export const placeCards = async (game, boardCardPos, cardId, playerId, io) => {
 
         player.isTurn = false;
         player.hand = player.hand.filter(card => card.id != cardId);
+        if(game.playerDeck.length == 0){
+            game.playerDeck = generateDeckForPlayer(2);
+            game.playerDeck = shuffle(game.playerDeck);
+        }
         const newCard = game.playerDeck.pop();
-        // const newCard = game.playerDeck.find(e=> e.rVal == 'D11');
         player.hand.push(newCard);
         player.missedTurns = 0;
         player.skipCount = 3;
@@ -835,6 +840,10 @@ export const discardCard = async (game, playerId, cardId, io) => {
         const boardCardsData = game.boardCards.filter(card => (card.rVal == playerCard.rVal) && !card.isChipPlaced);
         if (boardCardsData.length > 0) return io.to(player.socketId).emit('message', { eventName: 'DiscardCard', data: { message: 'Invalid Card Request', status: false } });
         player.hand = player.hand.filter(card => card.id != cardId);
+        if(game.playerDeck.length == 0){
+            game.playerDeck = generateDeckForPlayer(2);
+            game.playerDeck = shuffle(game.playerDeck);
+        }
         const newCard = game.playerDeck.pop();
         player.hand.push(newCard);
         game.players[playerIndex] = player;
