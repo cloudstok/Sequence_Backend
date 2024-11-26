@@ -43,7 +43,7 @@ export const prepareDataForWebhook = async(betObj, key, socket) => {
                 break;
             case 'ROLLBACK':
                 obj.txn_ref_id = txn_id;
-                obj.description = `${obj.amount} Rollbacked for Sequence game for Round ${id}`;
+                obj.description = `${obj.amount} rolled back for Sequence game for Round ${id}`;
                 obj.txn_type = 2;
             default:
                 obj;

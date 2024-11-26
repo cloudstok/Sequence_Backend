@@ -146,7 +146,7 @@ const rollbackTransaction = async (io, player, game) => {
     await updateBalanceFromAccount(rollbackData, "ROLLBACK", io, player);
 
     sendGameExitMessage(io, player, game.id,
-        'Due to some issue at opponent end, Game Play is Terminated. Your money has been rollbacked');
+        'Due to some issue at opponent end, Game Play is Terminated. Your money has been rolled back');
 };
 
 export const startGame = async (game, io) => {
@@ -169,20 +169,34 @@ export const startGame = async (game, io) => {
         }));
     
         game.players = updatedPlayers.filter(player => player !== null);
+
+        const cachedGame = await getCache(`game:${game.id}`);
+        if (!cachedGame) {
+            console.log(`Game ${game.id} has been deleted. Aborting dealCards.`);
+            return;
+        };
+        const parsedGame = JSON.parse(cachedGame);
     
-        if (game.players.length < game.maxPlayer) {
-            await Promise.all(game.players.map(async player => rollbackTransaction(io, player, game)));
+        if (parsedGame.players.length < parsedGame.maxPlayer) {
+            console.log("Maximum Player not reached in lobby, Rollbacking Debited Transactions");
+            await Promise.all(parsedGame.players.map(async updatedPlayer => {
+                game.players.map(player=> {
+                    if(updatedPlayer.id === player.id){
+                      rollbackTransaction(io, player, game)
+                    }
+                })
+            }));
             return removeGameFromList(game, io);
-        }
+        };
     
-        game.isStarted = true;
-        await setCache(`game:${game.id}`, JSON.stringify(game));
+        parsedGame.isStarted = true;
+        await setCache(`game:${game.id}`, JSON.stringify(parsedGame));
         setTimeout(async () => {
-            const cachedGame = await getCache(`game:${game.id}`);
+            const cachedGame = await getCache(`game:${parsedGame.id}`);
             if (!cachedGame) {
-                console.log(`Game ${game.id} has been deleted. Aborting dealCards.`);
+                console.log(`Game ${parsedGame.id} has been deleted. Aborting dealCards.`);
                 return;
-            }
+            };
             dealCards(JSON.parse(cachedGame), io);
         }, 1000);
     }
@@ -864,6 +878,7 @@ export const discardCard = async (game, playerId, cardId, io) => {
 
 export const removePlayerFromGame = async (game, player, io) => {
     try {
+        console.log("RemovePlayerFromGameInvoked>>>>>>>", player.id);
         const playerId = player.id;
         await deleteCache(`PG:${playerId}`);
         io.to(player.socketId).emit('message', {
@@ -871,9 +886,11 @@ export const removePlayerFromGame = async (game, player, io) => {
             data: {}
         });
         if (game.isStarted) {
+            console.log("Game left after start>>>>>>>");
             gameLeaveLogger.info(JSON.stringify({ gameId: game.id, status: game.isStarted, playerId}));
             await dropPlayerFromGame(game, playerId, io)
         } else {
+            console.log("Game left before start>>>>>>>");
             clearTimer(playerId, game.id);
             gameLeaveLogger.info(JSON.stringify({ gameId: game.id, status: false, playerId }));
             game.players = game.players.filter(p => p.id !== playerId);

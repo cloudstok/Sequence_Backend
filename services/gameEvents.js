@@ -134,6 +134,7 @@ export const JoinRoomRequest = async (io, socket, data) => {
                     return;
                 };
                 gameLogger.info(JSON.stringify(currentGame));
+                console.log("Game Initiated>>>>>>>>", currentGame.players.length);
                 await startGame(currentGame, io);
                 const timerKey = `timer_${currentGame.id}`;
                 if (globalThis[timerKey]) {
