@@ -878,7 +878,6 @@ export const discardCard = async (game, playerId, cardId, io) => {
 
 export const removePlayerFromGame = async (game, player, io) => {
     try {
-        console.log("RemovePlayerFromGameInvoked>>>>>>>", player.id);
         const playerId = player.id;
         await deleteCache(`PG:${playerId}`);
         io.to(player.socketId).emit('message', {
@@ -886,11 +885,9 @@ export const removePlayerFromGame = async (game, player, io) => {
             data: {}
         });
         if (game.isStarted) {
-            console.log("Game left after start>>>>>>>");
             gameLeaveLogger.info(JSON.stringify({ gameId: game.id, status: game.isStarted, playerId}));
             await dropPlayerFromGame(game, playerId, io)
         } else {
-            console.log("Game left before start>>>>>>>");
             clearTimer(playerId, game.id);
             gameLeaveLogger.info(JSON.stringify({ gameId: game.id, status: false, playerId }));
             game.players = game.players.filter(p => p.id !== playerId);
