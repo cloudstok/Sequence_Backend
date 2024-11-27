@@ -192,15 +192,16 @@ export const startGame = async (game, io) => {
                     }
                 })
             }));
+            
             return removeGameFromList(game, io);
         };
     
-        parsedGame.isStarted = true;
-        await setCache(`game:${game.id}`, JSON.stringify(parsedGame));
+        game.isStarted = true;
+        await setCache(`game:${game.id}`, JSON.stringify(game));
         setTimeout(async () => {
-            const cachedGame = await getCache(`game:${parsedGame.id}`);
+            const cachedGame = await getCache(`game:${game.id}`);
             if (!cachedGame) {
-                console.log(`Game ${parsedGame.id} has been deleted. Aborting dealCards.`);
+                console.log(`Game ${game.id} has been deleted. Aborting dealCards.`);
                 return;
             };
             dealCards(JSON.parse(cachedGame), io);
