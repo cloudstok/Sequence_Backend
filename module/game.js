@@ -170,6 +170,12 @@ export const startGame = async (game, io) => {
     
         game.players = updatedPlayers.filter(player => player !== null);
 
+        if(game.players.length < Number(game.maxPlayer)){
+            console.log("Maximum Player not reached in lobby, Rollbacking Debited Transactions");
+            await Promise.all(game.players.map(async player=> rollbackTransaction(io, player, game)));
+            return removeGameFromList(game, io);
+        }
+
         const cachedGame = await getCache(`game:${game.id}`);
         if (!cachedGame) {
             console.log(`Game ${game.id} has been deleted. Aborting dealCards.`);
